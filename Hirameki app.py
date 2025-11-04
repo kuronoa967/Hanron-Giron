@@ -1,5 +1,5 @@
 import streamlit as st
-import openai
+# import openai
 
 st.title("💡 AIひらめきノート")
 st.write("思いついた言葉を入力して、AIに関連アイデアを考えてもらいましょう。")
