@@ -1,5 +1,5 @@
 import streamlit as st
-
+import openai
 from io import BytesIO
 
 # -----------------------------
