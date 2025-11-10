@@ -1,33 +1,33 @@
+import os
 import streamlit as st
 from transformers import pipeline
 from io import BytesIO
-import torch
-import random
 import tempfile
 import whisper
 
-import os
+# -----------------------------
+# 依存ライブラリを安全にインストール（Cloud用）
+# -----------------------------
 os.system("pip install transformers torch openai-whisper fugashi ipadic --quiet")
 
 # -----------------------------
-# 設定
+# ページ設定
 # -----------------------------
-st.set_page_config(page_title="AI議論パートナー (オフライン版)", page_icon="🤖", layout="centered")
-st.title("AI議論パートナー（オフライン版）")
-st.caption("OpenAI APIなしで動作。ローカルAIモデルを使って反論・要約・改善案を生成します。")
+st.set_page_config(page_title="AI議論パートナー（軽量オフライン版）", page_icon="🤖", layout="centered")
+st.title("AI議論パートナー（軽量オフライン版）")
+st.caption("OpenAI APIなしで動作。軽量なローカルAIモデルで反論・要約・改善案を生成します。")
 
 # -----------------------------
-# モデル読み込み（キャッシュ）
+# モデル読み込み（キャッシュ付き）
 # -----------------------------
 @st.cache_resource
 def load_text_model():
-    # 日本語GPTモデル
-    model = pipeline("text-generation", model="rinna/japanese-gpt2-small", max_new_tokens=200)
-    return model
+    # 軽量な日本語GPTモデル
+    return pipeline("text-generation", model="rinna/japanese-gpt2-small", max_new_tokens=200)
 
 @st.cache_resource
 def load_whisper_model():
-    # 軽量Whisperでローカル音声文字起こし
+    # 最軽量Whisperで音声文字起こし
     return whisper.load_model("tiny")
 
 text_model = load_text_model()
@@ -42,7 +42,7 @@ def transcribe_audio(uploaded_file: BytesIO) -> str:
             tmp.write(uploaded_file.read())
             tmp_path = tmp.name
         result = whisper_model.transcribe(tmp_path, language="ja")
-        return result["text"]
+        return result.get("text", "")
     except Exception as e:
         st.error(f"音声の文字起こし中にエラーが発生しました: {e}")
         return ""
@@ -60,9 +60,9 @@ with st.form(key="debate_form"):
         user_text = st.text_area("あなたの主張を入力してください（例：テレワークは効率が悪いと思う）", height=120)
     else:
         uploaded_audio = st.file_uploader("音声ファイルをアップロード（mp3, wav, m4aなど）", type=["mp3", "wav", "m4a"])
-        st.caption("※ 音声をアップロードすると、自動で文字起こしして反論生成します。")
+        st.caption("※ 音声をアップロードすると自動で文字起こしして反論生成します。")
 
-    depth = st.selectbox("反論の深さ（目安）", ["短め（要点のみ）", "標準（論点＋具体例）", "詳しく（論理展開＋反証例）"])
+    depth = st.selectbox("反論の深さ", ["短め（要点のみ）", "標準（論点＋具体例）", "詳しく（論理展開＋反証例）"])
     tone = st.selectbox("反論のトーン", ["冷静で論理的", "強めで反論的だけど礼儀正しい", "やわらかく説得的"])
 
     submitted = st.form_submit_button("AIに議論してもらう")
@@ -71,6 +71,7 @@ with st.form(key="debate_form"):
 # 実行処理
 # -----------------------------
 if submitted:
+    # 音声の場合 → 文字起こし
     if input_mode == "音声アップロード" and uploaded_audio is not None:
         with st.spinner("音声を文字起こし中..."):
             user_text = transcribe_audio(uploaded_audio)
@@ -84,7 +85,7 @@ if submitted:
         st.warning("主張を入力してください。")
     else:
         with st.spinner("AIが反論を生成しています..."):
-            # depthとtoneを日本語でプロンプト化
+            # depth と tone を日本語→指示文変換
             depth_ja = {
                 "短め（要点のみ）": "簡潔に要点を中心に",
                 "標準（論点＋具体例）": "論点と具体例を交えて",
@@ -108,7 +109,20 @@ if submitted:
         # 出力整形
         # -----------------------------
         st.subheader("生成結果")
-        st.markdown(f"### 反対意見\n{result}\n\n---\n### 中立要約\nこの議論には複数の視点があり、双方に合理的な根拠が存在します。\n\n### 改善案\n- 主張を裏付ける具体的なデータを示す\n- 反対側の視点を一度整理する\n- 感情ではなく論理的根拠で補強する")
+        st.markdown(f"""
+        ### 🧭 反対意見
+        {result}
+
+        ---
+
+        ### ⚖️ 中立要約
+        この議論には複数の視点があり、どちらにも合理的な根拠があります。
+
+        ### 💡 改善案
+        - 主張を裏付ける具体的なデータを示す  
+        - 反対意見の視点を整理して補強する  
+        - 感情ではなく論理的根拠を中心にする
+        """)
 
         # ダウンロード
         download_text = f"入力: {user_text.strip()}\n\n{result}"
