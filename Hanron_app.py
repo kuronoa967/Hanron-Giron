@@ -22,13 +22,13 @@ st.caption("OpenAI APIなしで動作。ローカルAIモデルを使って反�
 @st.cache_resource
 def load_text_model():
     # 日本語GPTモデル
-    model = pipeline("text-generation", model="rinna/japanese-gpt2-medium", max_new_tokens=250)
+    model = pipeline("text-generation", model="rinna/japanese-gpt2-small", max_new_tokens=200)
     return model
 
 @st.cache_resource
 def load_whisper_model():
     # 軽量Whisperでローカル音声文字起こし
-    return whisper.load_model("base")
+    return whisper.load_model("tiny")
 
 text_model = load_text_model()
 whisper_model = load_whisper_model()
