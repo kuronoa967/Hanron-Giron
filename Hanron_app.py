@@ -6,6 +6,9 @@ import random
 import tempfile
 import whisper
 
+import os
+os.system("pip install transformers torch openai-whisper fugashi ipadic --quiet")
+
 # -----------------------------
 # 設定
 # -----------------------------
