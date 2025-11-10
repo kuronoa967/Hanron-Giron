@@ -1,3 +1,6 @@
-
 streamlit
-openai
+transformers
+torch
+openai-whisper
+fugashi
+ipadic
