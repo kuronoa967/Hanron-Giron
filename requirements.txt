@@ -1,6 +1,6 @@
 streamlit
-transformers
 torch
-openai-whisper
-fugashi
-ipadic
+transformers
+sentencepiece
+llama-cpp-python
+numpy
