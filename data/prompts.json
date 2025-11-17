@@ -1,0 +1,6 @@
+{
+  "counter_argument": "あなたは反対意見を提示する立場です。次の主張に対して論理的かつ建設的に反論してください：{input_text}",
+  "neutral_summary": "次の主張を中立的に要約してください：{input_text}",
+  "improvement": "次の主張をより説得力のある主張にするための改善案を出してください：{input_text}"
+}
+
