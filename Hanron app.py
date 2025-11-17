@@ -1,39 +1,77 @@
-import os
 import streamlit as st
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-from io import BytesIO
-import tempfile
-import whisper
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+import torch
 
-# -----------------------------
-# 依存ライブラリ（Streamlit Cloud 対応）
-# -----------------------------
-# HuggingFace Hub のモデルは Cloud がブロックするため使わない
-# komachi-gpt は pip 経由でモデル本体が落ちるため Cloud でも確実に動く
-os.system("pip install transformers torch fugashi ipadic komachi-gpt openai-whisper --quiet")
+st.set_page_config(page_title="AI議論パートナー（オフライン）", layout="wide")
 
-# -----------------------------
-# ページ設定
-# -----------------------------
-st.set_page_config(page_title="AI議論パートナー（軽量オフライン版）", page_icon="🤖", layout="centered")
-st.title("AI議論パートナー（軽量オフライン版）")
-st.caption("OpenAI APIなしで動作。ローカル軽量モデルで反論・要約・改善案を生成します。")
-
-# -----------------------------
-# モデル読み込み（キャッシュ必須）
-# -----------------------------
+# -------------------------
+# モデル読み込み
+# -------------------------
 @st.cache_resource
 def load_text_model():
-    model_name = "ku-nlp/komachi-gpt-6B-instruction-sft-v1"
+    model_path = "./tiny-gpt2"  # GitHub に同梱したフォルダ
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        low_cpu_mem_usage=True,
-        device_map="cpu"
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    model = AutoModelForCausalLM.from_pretrained(model_path)
+
+    generator = pipeline(
+        "text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        max_new_tokens=120,
+        temperature=0.8,
     )
 
-    gpt_pipeline = pipeline(
+    return generator
+
+
+st.title("AI議論パートナー（軽量オフライン版）")
+st.write("OpenAI APIなし・ローカルモデルのみで反論・要約・改善案を生成します。")
+
+# モデル読み込み
+with st.spinner("モデル読み込み中…"):
+    text_model = load_text_model()
+
+st.success("モデル準備完了！")
+
+# -------------------------
+# 入力
+# -------------------------
+user_text = st.text_area("あなたの意見を入力してください：", height=200)
+
+if st.button("議論を生成"):
+    if not user_text.strip():
+        st.warning("テキストを入力してください")
+    else:
+        with st.spinner("AIが考えています…"):
+
+            def generate(prompt):
+                out = text_model(prompt)
+                return out[0]["generated_text"].replace(prompt, "").strip()
+
+            # 反論
+            prompt1 = f"意見: {user_text}\n\nこの意見に対して、建設的な反論を述べよ。"
+            hanron = generate(prompt1)
+
+            # 要約
+            prompt2 = f"文章: {user_text}\n\nこの文章を短く要約せよ。"
+            summary = generate(prompt2)
+
+            # 改善案
+            prompt3 = f"意見: {user_text}\n\nこの意見をより良い形に書き直せ。"
+            improve = generate(prompt3)
+
+        # -------------------------
+        # 出力表示
+        # -------------------------
+        st.subheader("📌 AIの反論")
+        st.write(hanron)
+
+        st.subheader("📌 要約")
+        st.write(summary)
+
+        st.subheader("📌 改善案")
+        st.write(improve)
         "text-generation",
         model=model,
         tokenizer=tokenizer,
