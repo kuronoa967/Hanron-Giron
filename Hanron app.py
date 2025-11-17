@@ -22,12 +22,18 @@ st.caption("OpenAI APIなしで動作。軽量なローカルAIモデルで反�
 # -----------------------------
 @st.cache_resource
 def load_text_model():
-    # 軽量な日本語GPTモデル
-    return pipeline("text-generation", model="rinna/japanese-gpt2-small", max_new_tokens=200)
+    # rinna は Cloud で tokenizer エラー → TinyStories 日本語超軽量モデルに変更
+    return pipeline(
+        "text-generation",
+        model="mmnga/TinyStories-33M-japanese",
+        tokenizer="mmnga/TinyStories-33M-japanese",
+        max_new_tokens=200,
+        do_sample=True,
+        temperature=0.7
+    )
 
 @st.cache_resource
 def load_whisper_model():
-    # 最軽量Whisperで音声文字起こし
     return whisper.load_model("tiny")
 
 text_model = load_text_model()
@@ -71,7 +77,6 @@ with st.form(key="debate_form"):
 # 実行処理
 # -----------------------------
 if submitted:
-    # 音声の場合 → 文字起こし
     if input_mode == "音声アップロード" and uploaded_audio is not None:
         with st.spinner("音声を文字起こし中..."):
             user_text = transcribe_audio(uploaded_audio)
@@ -85,7 +90,7 @@ if submitted:
         st.warning("主張を入力してください。")
     else:
         with st.spinner("AIが反論を生成しています..."):
-            # depth と tone を日本語→指示文変換
+
             depth_ja = {
                 "短め（要点のみ）": "簡潔に要点を中心に",
                 "標準（論点＋具体例）": "論点と具体例を交えて",
@@ -105,9 +110,6 @@ if submitted:
 
             result = text_model(prompt)[0]["generated_text"]
 
-        # -----------------------------
-        # 出力整形
-        # -----------------------------
         st.subheader("生成結果")
         st.markdown(f"""
         ### 🧭 反対意見
@@ -124,7 +126,6 @@ if submitted:
         - 感情ではなく論理的根拠を中心にする
         """)
 
-        # ダウンロード
         download_text = f"入力: {user_text.strip()}\n\n{result}"
         st.download_button("結果をテキストでダウンロード", data=download_text, file_name="hanron_result.txt")
 
