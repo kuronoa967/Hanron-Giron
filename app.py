@@ -1,13 +1,11 @@
-
 import streamlit as st
-from utils.debate_utils import load_local_model, generate_counter_argument, summarize_neutral, suggest_improvements
+from utils import generate_counter_argument, summarize_neutral, suggest_improvements, load_local_model
 
-# ページ設定
 st.set_page_config(page_title="Hanron-Giron", layout="centered")
 st.title("Hanron-Giron — 議論パートナー (オフライン)")
 
 # モデル読み込み
-llm = load_local_model("model/llama_japanese.gguf")  # ローカルモデルのパス
+llm = load_local_model("model/llama_japanese.gguf")  # 各自のモデルパスに置き換え
 
 # ユーザー入力
 user_input = st.text_area("あなたの意見（主張）を入力してください：")
