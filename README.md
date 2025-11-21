@@ -1,3 +1,3 @@
 # AI-Hirameki-note
 
-https://hanron-giron-daitouron.streamlit.app
+https://hanron-giron.streamlit.app
